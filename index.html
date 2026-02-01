@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Fire TV Receiver ver.005</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { background: #000; color: #00ffcc; text-align: center; font-family: sans-serif; padding-top: 15%; }
+        .status-box { border: 2px solid #00ffcc; display: inline-block; padding: 30px; border-radius: 20px; box-shadow: 0 0 20px #00ffcc; }
+        .loading { font-style: italic; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="status-box">
+        <h1 id="title">Silk URL Receiver</h1>
+        <p id="ip-status" class="loading">ネットワークを識別中...</p>
+        <p id="msg">iPhoneのブックマークレットを押すとここにページが開きます</p>
+    </div>
+
+    <script>
+        // 同一ネットワーク（グローバルIP）をIDにする
+        fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => {
+                const networkID = "firetv-" + data.ip.replace(/\./g, "-");
+                startPeer(networkID);
+            })
+            .catch(() => {
+                document.getElementById('ip-status').innerText = "IP取得エラー。通信環境を確認してください。";
+            });
+
+        function startPeer(id) {
+            const peer = new Peer(id);
+            
+            peer.on('open', () => {
+                document.getElementById('ip-status').innerText = "● 同一Wi-Fi内で待機中";
+                document.getElementById('ip-status').style.color = "#00ffcc";
+            });
+
+            peer.on('connection', (conn) => {
+                conn.on('data', (url) => {
+                    if (url && url.startsWith('http')) {
+                        document.getElementById('msg').innerText = "受信しました。移動します...";
+                        setTimeout(() => {
+                            window.location.href = url;
+                        }, 500);
+                    }
+                });
+            });
+
+            peer.on('error', (err) => {
+                console.error(err);
+                document.getElementById('ip-status').innerText = "エラー: 既に別のタブで開いている可能性があります。";
+            });
+        }
+    </script>
+</body>
+</html>
