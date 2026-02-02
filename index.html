@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Tobasu</title>
@@ -8,11 +8,11 @@
         :root { --apple-blue: #007AFF; --bg-gradient: radial-gradient(circle at 50% 50%, #1c1c1e 0%, #000000 100%); }
         body { margin: 0; padding: 0; height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg-gradient); color: #ffffff; font-family: -apple-system, sans-serif; overflow: hidden; }
         
-        /* メインコンテナ */
+        /* Main Container */
         .container { text-align: center; transition: all 0.5s ease; }
         .icon-circle { width: 100px; height: 100px; background: var(--apple-blue); border-radius: 22px; margin: 0 auto 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0, 122, 255, 0.3); }
 
-        /* 承認ダイアログ */
+        /* Dialog */
         #dialog {
             display: none;
             position: fixed;
@@ -57,15 +57,15 @@
             <svg width="50" height="50" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </div>
         <h1>Tobasu</h1>
-        <div id="ip-status" class="status-badge">準備中...</div>
+        <div id="ip-status" class="status-badge">Works on the same Wi-Fi</div>
     </div>
 
     <div id="dialog">
         <h2 style="margin:0 0 10px;">Tobasu Request</h2>
-        <p style="color: rgba(255,255,255,0.7);">コンテンツを受信しました。開きますか？</p>
+        <p style="color: rgba(255,255,255,0.7);">Incoming content received. Open it?</p>
         <div class="btn-group">
-            <button id="ok-btn" class="btn btn-ok">再生する</button>
-            <button id="no-btn" class="btn btn-no">無視</button>
+            <button id="ok-btn" class="btn btn-ok">Open</button>
+            <button id="no-btn" class="btn btn-no">Ignore</button>
         </div>
     </div>
 
@@ -79,7 +79,7 @@
                 const peer = new Peer(networkID);
                 
                 peer.on('open', () => {
-                    document.getElementById('ip-status').innerText = "● 接続待機中";
+                    document.getElementById('ip-status').innerText = "● Ready on the same Wi-Fi";
                 });
 
                 peer.on('connection', (conn) => {
