@@ -2,63 +2,106 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Tobasu | Portal</title>
+    <title>AirTransfer Pro</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --apple-blue: #007AFF; --bg-gradient: radial-gradient(circle at 50% 50%, #1c1c1e 0%, #000000 100%); }
         body { margin: 0; padding: 0; height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg-gradient); color: #ffffff; font-family: -apple-system, sans-serif; overflow: hidden; }
+        
+        /* メインコンテナ */
         .container { text-align: center; transition: all 0.5s ease; }
         .icon-circle { width: 100px; height: 100px; background: var(--apple-blue); border-radius: 22px; margin: 0 auto 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0, 122, 255, 0.3); }
-        #dialog { display: none; position: fixed; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); padding: 40px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.2); width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); animation: popIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 10; }
+
+        /* 承認ダイアログ */
+        #dialog {
+            display: none;
+            position: fixed;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            padding: 40px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: popIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
         @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
         .btn-group { display: flex; gap: 20px; justify-content: center; margin-top: 30px; }
-        .btn { padding: 15px 30px; border-radius: 12px; border: none; font-size: 1.1rem; font-weight: 600; cursor: pointer; min-width: 120px; outline: none; transition: 0.2s; }
+        .btn {
+            padding: 15px 30px;
+            border-radius: 12px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 120px;
+            outline: none;
+        }
         .btn-ok { background: var(--apple-blue); color: white; }
         .btn-ok:focus { box-shadow: 0 0 0 4px #fff; transform: scale(1.1); }
         .btn-no { background: rgba(255, 255, 255, 0.1); color: white; }
         .btn-no:focus { background: rgba(255, 255, 255, 0.2); transform: scale(1.1); }
-        h1 { font-size: 3rem; font-weight: 700; letter-spacing: -1px; margin: 0; }
-        .status-badge { margin-top: 15px; color: rgba(255,255,255,0.4); font-size: 0.9rem; }
+        
+        .status-badge { margin-top: 20px; color: var(--apple-blue); font-size: 0.9rem; }
     </style>
 </head>
 <body>
+
     <div class="container" id="main-ui">
         <div class="icon-circle">
-            <svg width="50" height="50" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            <svg width="50" height="50" viewBox="0 0 24 24" fill="white"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
         </div>
         <h1>Tobasu</h1>
         <div id="ip-status" class="status-badge">準備中...</div>
     </div>
+
     <div id="dialog">
         <h2 style="margin:0 0 10px;">Tobasu Request</h2>
-        <p style="color: rgba(255,255,255,0.7);">新しいコンテンツを受信しました。<br>再生しますか？</p>
+        <p style="color: rgba(255,255,255,0.7);">コンテンツを受信しました。開きますか？</p>
         <div class="btn-group">
-            <button id="ok-btn" class="btn btn-ok">Tobasu!</button>
+            <button id="ok-btn" class="btn btn-ok">再生する</button>
             <button id="no-btn" class="btn btn-no">無視</button>
         </div>
     </div>
+
     <script>
         let pendingUrl = "";
-        fetch('https://api.ipify.org?format=json').then(res => res.json()).then(data => {
-            const networkID = "tobasu-" + data.ip.replace(/\./g, "-");
-            const peer = new Peer(networkID);
-            peer.on('open', () => { document.getElementById('ip-status').innerText = "● 接続待機中 (Same Wi-Fi)"; });
-            peer.on('connection', (conn) => {
-                conn.on('data', (url) => {
-                    if (url && url.startsWith('http')) {
-                        pendingUrl = url;
-                        showDialog();
-                    }
+
+        fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => {
+                /* ここをiPhone側と一致させて受信可能にする */
+                const networkID = "tobasu-" + data.ip.replace(/\./g, "-");
+                const peer = new Peer(networkID);
+                
+                peer.on('open', () => {
+                    document.getElementById('ip-status').innerText = "● 接続待機中";
+                });
+
+                peer.on('connection', (conn) => {
+                    conn.on('data', (url) => {
+                        if (url && url.startsWith('http')) {
+                            pendingUrl = url;
+                            showDialog();
+                        }
+                    });
                 });
             });
-        });
+
         function showDialog() {
-            document.getElementById('main-ui').style.filter = "blur(15px)";
+            document.getElementById('main-ui').style.filter = "blur(10px)";
             const dialog = document.getElementById('dialog');
             dialog.style.display = "block";
+            
             const okBtn = document.getElementById('ok-btn');
             okBtn.focus();
-            okBtn.onclick = () => { window.location.href = pendingUrl; };
+
+            okBtn.onclick = () => {
+                window.location.href = pendingUrl;
+            };
+
             document.getElementById('no-btn').onclick = () => {
                 dialog.style.display = "none";
                 document.getElementById('main-ui').style.filter = "none";
