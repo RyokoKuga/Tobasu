@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tobasu - Sender</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root { --apple-blue: #007AFF; --bg-gradient: radial-gradient(circle at 50% 50%, #1c1c1e 0%, #000000 100%); }
+        body { margin: 0; padding: 0; height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg-gradient); color: #ffffff; font-family: -apple-system, sans-serif; overflow: hidden; }
+        
+        .container { text-align: center; width: 90%; max-width: 400px; transition: all 0.5s ease; }
+        .icon-circle { width: 80px; height: 80px; background: var(--apple-blue); border-radius: 20px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0, 122, 255, 0.3); }
+
+        .input-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 30px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        .input-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-bottom: 8px; margin-left: 5px; }
+        
+        input {
+            width: 100%;
+            padding: 15px;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.3s;
+        }
+        input:focus { border-color: var(--apple-blue); background: rgba(255, 255, 255, 0.1); }
+
+        .send-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--apple-blue);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+        .send-btn:active { transform: scale(0.98); opacity: 0.9; }
+        .send-btn:disabled { background: #555; cursor: not-allowed; }
+
+        #status { margin-top: 15px; font-size: 0.85rem; color: var(--apple-blue); min-height: 1.2em; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="icon-circle">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </div>
+        <h1 style="font-size: 2rem; margin-bottom: 20px;">Tobasu Send</h1>
+        
+        <div class="input-card">
+            <div class="input-group">
+                <label>URL to Send</label>
+                <input type="url" id="target-url" placeholder="https://youtube.com/..." autocomplete="off">
+            </div>
+            <button id="send-btn" class="send-btn" disabled>Detecting Network...</button>
+            <div id="status">Works on the same Wi-Fi</div>
+        </div>
+    </div>
+
+    <script>
+        let targetID = "";
+        const peer = new Peer(); 
+        const sendBtn = document.getElementById('send-btn');
+        const statusDiv = document.getElementById('status');
+
+        // 自動的に受信側のID（自分のグローバルIPベース）を特定
+        fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => {
+                targetID = "tobasu-" + data.ip.replace(/\./g, "-");
+                sendBtn.disabled = false;
+                sendBtn.innerText = "Send Content";
+            })
+            .catch(() => {
+                statusDiv.innerText = "Network Error. Please refresh.";
+            });
+
+        sendBtn.onclick = () => {
+            const url = document.getElementById('target-url').value.trim();
+
+            if (!url) {
+                statusDiv.innerText = "Please enter a URL.";
+                return;
+            }
+
+            statusDiv.innerText = "Connecting to Receiver...";
+            sendBtn.disabled = true;
+
+            const conn = peer.connect(targetID);
+
+            conn.on('open', () => {
+                statusDiv.innerText = "Sending...";
+                conn.send(url);
+                
+                setTimeout(() => {
+                    statusDiv.innerText = "Successfully sent!";
+                    sendBtn.disabled = false;
+                    document.getElementById('target-url').value = ""; // Clear input
+                    setTimeout(() => { statusDiv.innerText = "Works on the same Wi-Fi"; }, 3000);
+                }, 500);
+            });
+
+            conn.on('error', (err) => {
+                statusDiv.innerText = "Receiver not found.";
+                sendBtn.disabled = false;
+            });
+
+            setTimeout(() => {
+                if (sendBtn.disabled && statusDiv.innerText === "Connecting to Receiver...") {
+                    statusDiv.innerText = "Make sure Receiver is open.";
+                    sendBtn.disabled = false;
+                }
+            }, 5000);
+        };
+    </script>
+</body>
+</html>
