@@ -81,13 +81,20 @@
         const sendBtn = document.getElementById('send-btn');
         const statusDiv = document.getElementById('status');
 
-        // 自動的に受信側のID（自分のグローバルIPベース）を特定
         fetch('https://api.ipify.org?format=json')
             .then(res => res.json())
             .then(data => {
                 targetID = "tobasu-" + data.ip.replace(/\./g, "-");
                 sendBtn.disabled = false;
                 sendBtn.innerText = "Send Content";
+
+                const params = new URLSearchParams(window.location.search);
+                const sharedUrl = params.get('url');
+                if (sharedUrl) {
+                    document.getElementById('target-url').value = sharedUrl;
+                    statusDiv.innerText = "URL detected. Auto-sending...";
+                    setTimeout(() => { if(!sendBtn.disabled) sendBtn.click(); }, 1000);
+                }
             })
             .catch(() => {
                 statusDiv.innerText = "Network Error. Please refresh.";
@@ -113,7 +120,7 @@
                 setTimeout(() => {
                     statusDiv.innerText = "Successfully sent!";
                     sendBtn.disabled = false;
-                    document.getElementById('target-url').value = ""; // Clear input
+                    document.getElementById('target-url').value = ""; 
                     setTimeout(() => { statusDiv.innerText = "Works on the same Wi-Fi"; }, 3000);
                 }, 500);
             });
