@@ -7,20 +7,20 @@ Tobasu is a minimal, elegant content-sharing tool. It allows you to **"throw" (j
 
 
 
-## ✨ Features
+## ■ Features
 
 - **Seamless Transfer**: Instantly send URLs to other devices without manual configuration.
 - **Peer-to-Peer (P2P)**: Powered by PeerJS for direct device-to-device communication.
 - **Auto-Detection**: Automatically detects the receiver on your network. No IP typing required.
 - **Network Bound**: Designed to work exclusively between devices sharing the same public IP.
 
-## 🛠️ Components
+## ■ Components
 
 The project consists of two simple interfaces:
 - **Receiver**: A standby interface that prompts an approval dialog upon receiving content.
 - **Sender**: A streamlined transmitter that auto-detects the active receiver on the same network.
 
-## 🚀 Quick Start
+## ■ Quick Start
 
 ### 1. Host the Files
 Deploy the HTML files to any static hosting service (GitHub Pages, Vercel, etc.) or run them on a local server.
@@ -37,11 +37,11 @@ Open the **Sender** on your source device (e.g., Smartphone).
 ### 4. Approve and Open
 An alert will appear on the Receiver. Click **"Open"** to navigate to the shared link.
 
-## 📦 Tech Stack
+## ■ Tech Stack
 
 - **Frontend**: HTML5, CSS3 (Custom Variables, Flexbox, Keyframes)
 - **Networking**: [PeerJS](https://peerjs.com/)
 - **Utility**: [ipify API](https://www.ipify.org/)
 
-## 📝 Usage Note
+## ■ Usage Note
 > **Note**: Both devices must be connected to the same Wi-Fi network (sharing the same public IP address) for the automatic discovery to function correctly.
