@@ -23,7 +23,7 @@ The project consists of two simple interfaces:
 ## ■ Quick Start
 
 ### 1. Host the Files
-Deploy the HTML files to any static hosting service (GitHub Pages, Vercel, etc.) or run them on a local server.
+Deploy the HTML files to any static hosting service or run them on a local server.
 
 ### 2. Launch Receiver
 Open the **Receiver** on the target device (e.g., PC, Tablet, or TV).
