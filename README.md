@@ -37,6 +37,19 @@ Open the **Sender** on your source device (e.g., Smartphone).
 ### 4. Approve and Open
 An alert will appear on the Receiver. Click **"Open"** to navigate to the shared link.
 
+## ■ Power User Tip: The "Tobasu!" Bookmarklet
+
+For the most efficient experience, use the Bookmarklet to send the page you are currently viewing without any manual copying.
+
+### Installation
+1. Create a new bookmark in your browser's bookmark bar.
+2. Set the Name to `Tobasu!`.
+3. Paste the following code into the **URL** (or Location) field:
+
+```javascript
+javascript:(function(){const S='[https://ryokokuga.github.io/Tobasu/send.html';window.open(S+'?url='+encodeURIComponent(window.location.href),'_blank](https://ryokokuga.github.io/Tobasu/send.html';window.open(S+'?url='+encodeURIComponent(window.location.href),'_blank)');})();
+```
+
 ## ■ Tech Stack
 
 - **Frontend**: HTML5, CSS3 (Custom Variables, Flexbox, Keyframes)
