@@ -47,7 +47,12 @@ For the most efficient experience, use the Bookmarklet to send the page you are 
 3. Paste the following code into the **URL** (or Location) field:
 
 ```javascript
-javascript:(function(){const S='[https://ryokokuga.github.io/Tobasu/send.html';window.open(S+'?url='+encodeURIComponent(window.location.href),'_blank](https://ryokokuga.github.io/Tobasu/send.html';window.open(S+'?url='+encodeURIComponent(window.location.href),'_blank)');})();
+javascript:(function(){
+    const SENDER_PAGE_URL = "https://ryokokuga.github.io/Tobasu/send.html"; 
+    const currentUrl = window.location.href;
+    const finalUrl = SENDER_PAGE_URL + "?url=" + encodeURIComponent(currentUrl);
+    window.open(finalUrl, '_blank');
+})();
 ```
 
 ## ■ Tech Stack
