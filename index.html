@@ -156,7 +156,9 @@
 
             // Openクリック
             document.getElementById('ok-btn').onclick = () => {
-                window.location.href = pendingUrl;
+                const targetUrl = pendingUrl; // URLを保持
+                closeDialog(); // 遷移前にダイアログを閉じる
+                window.location.href = targetUrl;
             };
 
             // Ignoreクリック
@@ -171,6 +173,13 @@
             pendingUrl = "";
             urlDisplay.innerText = "";
         }
+
+        // 戻るボタンで戻ってきたときにダイアログを確実にリセットする
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                closeDialog();
+            }
+        });
     </script>
 </body>
 </html>
