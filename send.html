@@ -10,7 +10,21 @@
         body { margin: 0; padding: 0; height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg-gradient); color: #ffffff; font-family: -apple-system, sans-serif; overflow: hidden; }
         
         .container { text-align: center; width: 90%; max-width: 400px; transition: all 0.5s ease; }
-        .icon-circle { width: 80px; height: 80px; background: var(--apple-blue); border-radius: 20px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0, 122, 255, 0.3); }
+        .icon-circle { width: 80px; height: 80px; background: var(--apple-blue); border-radius: 20px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0, 122, 255, 0.3); overflow: visible; }
+
+        /* --- アニメーション追加部分 --- */
+        .icon-circle svg { transition: transform 0.3s ease; }
+        .fly-away { animation: flyOut 0.6s forwards cubic-bezier(0.55, 0.055, 0.675, 0.19); }
+        .fade-in-back { animation: fadeIn 0.8s forwards ease-out; }
+        @keyframes flyOut {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(200px, -150px) scale(0.5); opacity: 0; }
+        }
+        @keyframes fadeIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        /* ------------------------- */
 
         .input-card {
             background: rgba(255, 255, 255, 0.1);
@@ -103,6 +117,7 @@
 
         sendBtn.onclick = () => {
             const url = document.getElementById('target-url').value.trim();
+            const svgIcon = document.querySelector('.icon-circle svg'); // 追加
 
             if (!url) {
                 statusDiv.innerText = "Please enter a URL.";
@@ -120,6 +135,18 @@
                 
                 setTimeout(() => {
                     statusDiv.innerText = "Successfully sent!";
+                    
+                    // --- アニメーション実行 ---
+                    svgIcon.classList.add('fly-away');
+                    setTimeout(() => {
+                        svgIcon.classList.remove('fly-away');
+                        svgIcon.classList.add('fade-in-back');
+                        setTimeout(() => {
+                            svgIcon.classList.remove('fade-in-back');
+                        }, 800);
+                    }, 600);
+                    // -------------------------
+
                     sendBtn.disabled = false;
                     document.getElementById('target-url').value = ""; 
                     setTimeout(() => { statusDiv.innerText = "Works on the same Wi-Fi"; }, 3000);
