@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tobasu - Link Receiver</title>
+    <title>Tobasu - Premium Receiver</title>
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23007AFF'%3E%3Cpath d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z'/%3E%3C/svg%3E">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
@@ -19,7 +20,6 @@
             overflow: hidden; 
         }
         
-        /* メインUI */
         .container { text-align: center; transition: all 0.5s ease; }
         .icon-circle { 
             width: 100px; height: 100px; background: var(--apple-blue); 
@@ -34,55 +34,52 @@
             100% { transform: scale(1); }
         }
 
-        /* ダイアログ（受信通知） */
-        #dialog {
-            display: none;
-            position: fixed;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            padding: 30px;
-            border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            width: 85%;
-            max-width: 400px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            animation: popIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-            z-index: 10;
+        /* Video Player Wrapper */
+        #player-wrapper {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 100;
         }
-        @keyframes popIn { 
-            from { transform: scale(0.8); opacity: 0; } 
-            to { transform: scale(1); opacity: 1; } 
+        .video-js { width: 100% !important; height: 100% !important; }
+        
+        /* 閉じるボタン：コントローラーと同期 */
+        .close-player {
+            position: absolute; top: 20px; right: 20px; z-index: 101;
+            background: rgba(0, 0, 0, 0.5); border: none; color: white;
+            width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+            font-size: 20px; backdrop-filter: blur(10px);
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            opacity: 0; visibility: hidden;
         }
 
+        /* Video.jsのアクティブ状態に連動 */
+        .video-js.vjs-user-active ~ .close-player,
+        .video-js.vjs-paused ~ .close-player,
+        .close-player:hover {
+            opacity: 1; visibility: visible;
+        }
+
+        #dialog {
+            display: none; position: fixed; background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            padding: 30px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 85%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: popIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 10;
+        }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
         .url-display {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 12px;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            color: var(--apple-blue);
-            word-break: break-all;
-            margin: 15px 0 25px;
-            border: 1px solid rgba(0, 122, 255, 0.2);
-            text-align: left;
+            background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 12px;
+            font-size: 0.85rem; color: var(--apple-blue); word-break: break-all;
+            margin: 15px 0 25px; border: 1px solid rgba(0, 122, 255, 0.2); text-align: left;
         }
 
         .btn-group { display: flex; gap: 15px; justify-content: center; }
         .btn {
-            padding: 14px 28px;
-            border-radius: 14px;
-            border: none;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            flex: 1;
-            transition: 0.2s;
-            outline: none;
+            padding: 14px 28px; border-radius: 14px; border: none;
+            font-size: 1rem; font-weight: 600; cursor: pointer; flex: 1; transition: 0.2s;
         }
         .btn-ok { background: var(--apple-blue); color: white; }
-        .btn-ok:active { transform: scale(0.95); opacity: 0.8; }
         .btn-no { background: rgba(255, 255, 255, 0.15); color: white; }
-        .btn-no:active { background: rgba(255, 255, 255, 0.25); }
         
         h1 { font-size: 2.5rem; font-weight: 700; letter-spacing: -1px; margin: 0; }
         .status-badge { margin-top: 20px; color: var(--apple-blue); font-size: 0.9rem; opacity: 0.8; }
@@ -101,85 +98,76 @@
     <div id="dialog">
         <h2 style="margin:0 0 5px; font-size: 1.4rem;">Tobasu Request</h2>
         <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem; margin-bottom: 15px;">Incoming link received:</p>
-        
         <div id="received-url" class="url-display"></div>
-        
         <div class="btn-group">
             <button id="ok-btn" class="btn btn-ok">Open</button>
             <button id="no-btn" class="btn btn-no">Ignore</button>
         </div>
     </div>
 
+    <div id="player-wrapper">
+        <video id="my-video" class="video-js vjs-big-play-centered" controls preload="auto"></video>
+        <button class="close-player" onclick="stopVideo()">✕</button>
+    </div>
+
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+
     <script>
         let pendingUrl = "";
-        const statusEl = document.getElementById('ip-status');
-        const dialogEl = document.getElementById('dialog');
-        const mainUI = document.getElementById('main-ui');
-        const urlDisplay = document.getElementById('received-url');
+        const player = videojs('my-video');
 
-        // IPアドレスを取得してPeerIDを作成
         fetch('https://api.ipify.org?format=json')
             .then(res => res.json())
             .then(data => {
                 const networkID = "tobasu-" + data.ip.replace(/\./g, "-");
                 const peer = new Peer(networkID);
-                
-                peer.on('open', (id) => {
-                    statusEl.innerText = "● Ready on network: " + data.ip;
-                });
-
+                peer.on('open', () => document.getElementById('ip-status').innerText = "● Ready: " + data.ip);
                 peer.on('connection', (conn) => {
                     conn.on('data', (url) => {
-                        if (url && (url.startsWith('http') || url.startsWith('https'))) {
+                        if (url && url.startsWith('http')) {
                             pendingUrl = url;
-                            urlDisplay.innerText = url; // ダイアログに表示
-                            showDialog();
+                            document.getElementById('received-url').innerText = url;
+                            document.getElementById('main-ui').style.filter = "blur(20px) scale(0.95)";
+                            document.getElementById('dialog').style.display = "block";
                         }
                     });
                 });
-
-                peer.on('error', (err) => {
-                    statusEl.innerText = "✕ Connection Error";
-                    console.error(err);
-                });
-            })
-            .catch(err => {
-                statusEl.innerText = "✕ Offline or Blocked";
             });
 
-        function showDialog() {
-            mainUI.style.filter = "blur(20px) scale(0.95)";
-            dialogEl.style.display = "block";
-            
-            // アクセシビリティのためOpenボタンにフォーカス
-            document.getElementById('ok-btn').focus();
+        document.getElementById('ok-btn').onclick = () => {
+            const url = pendingUrl;
+            document.getElementById('dialog').style.display = "none";
+            tryVideoJS(url);
+        };
 
-            // Openクリック
-            document.getElementById('ok-btn').onclick = () => {
-                const targetUrl = pendingUrl; // URLを保持
-                closeDialog(); // 遷移前にダイアログを閉じる
-                window.location.href = targetUrl;
-            };
+        function tryVideoJS(url) {
+            let type = url.includes(".m3u8") ? "application/x-mpegURL" : "video/mp4";
+            player.src({ type: type, src: url });
+            let hasError = false;
+            player.one('error', () => {
+                hasError = true;
+                player.pause();
+                window.location.href = url;
+            });
+            player.play().then(() => {
+                document.getElementById('player-wrapper').style.display = "block";
+            }).catch(() => {
+                setTimeout(() => { if(player.error() && !hasError) window.location.href = url; }, 500);
+            });
+        }
 
-            // Ignoreクリック
-            document.getElementById('no-btn').onclick = () => {
-                closeDialog();
-            };
+        function stopVideo() {
+            player.pause();
+            document.getElementById('player-wrapper').style.display = "none";
+            document.getElementById('main-ui').style.filter = "none";
         }
 
         function closeDialog() {
-            dialogEl.style.display = "none";
-            mainUI.style.filter = "none";
-            pendingUrl = "";
-            urlDisplay.innerText = "";
+            document.getElementById('dialog').style.display = "none";
+            document.getElementById('main-ui').style.filter = "none";
         }
 
-        // 戻るボタンで戻ってきたときにダイアログを確実にリセットする
-        window.addEventListener('pageshow', (event) => {
-            if (event.persisted) {
-                closeDialog();
-            }
-        });
+        document.getElementById('no-btn').onclick = closeDialog;
     </script>
 </body>
 </html>
