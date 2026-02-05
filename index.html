@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tobasu - Link Receiver</title>
-    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23007AFF'%3E%3Cpath d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z'/%3E%3C/svg%3E">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
@@ -33,30 +32,6 @@
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
-        }
-
-        /* Video Player Wrapper */
-        #player-wrapper {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 100;
-        }
-        .video-js { width: 100% !important; height: 100% !important; }
-        
-        /* 閉じるボタン：コントローラーと同期 */
-        .close-player {
-            position: absolute; top: 20px; right: 20px; z-index: 101;
-            background: rgba(0, 0, 0, 0.5); border: none; color: white;
-            width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
-            font-size: 20px; backdrop-filter: blur(10px);
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-            opacity: 0; visibility: hidden;
-        }
-
-        /* Video.jsのアクティブ状態に連動（兄弟要素として配置するため~を使用） */
-        .video-js.vjs-user-active ~ .close-player,
-        .video-js.vjs-paused ~ .close-player,
-        .close-player:hover {
-            opacity: 1; visibility: visible;
         }
 
         /* ダイアログ（受信通知） */
@@ -135,23 +110,12 @@
         </div>
     </div>
 
-    <div id="player-wrapper">
-        <video id="my-video" class="video-js vjs-big-play-centered" controls preload="auto"></video>
-        <button class="close-player" onclick="stopVideo()">✕</button>
-    </div>
-
-    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
-
     <script>
         let pendingUrl = "";
         const statusEl = document.getElementById('ip-status');
         const dialogEl = document.getElementById('dialog');
         const mainUI = document.getElementById('main-ui');
         const urlDisplay = document.getElementById('received-url');
-        const playerWrapper = document.getElementById('player-wrapper');
-
-        // Video.js 初期化
-        const player = videojs('my-video');
 
         // IPアドレスを取得してPeerIDを作成
         fetch('https://api.ipify.org?format=json')
@@ -168,7 +132,7 @@
                     conn.on('data', (url) => {
                         if (url && (url.startsWith('http') || url.startsWith('https'))) {
                             pendingUrl = url;
-                            urlDisplay.innerText = url; 
+                            urlDisplay.innerText = url; // ダイアログに表示
                             showDialog();
                         }
                     });
@@ -192,10 +156,9 @@
 
             // Openクリック
             document.getElementById('ok-btn').onclick = () => {
-                const targetUrl = pendingUrl;
-                closeDialog(); 
-                // 動画再生試行ロジック
-                tryVideoJS(targetUrl);
+                const targetUrl = pendingUrl; // URLを保持
+                closeDialog(); // 遷移前にダイアログを閉じる
+                window.location.href = targetUrl;
             };
 
             // Ignoreクリック
@@ -204,40 +167,10 @@
             };
         }
 
-        function tryVideoJS(url) {
-            let type = url.includes(".m3u8") ? "application/x-mpegURL" : "video/mp4";
-            player.src({ type: type, src: url });
-
-            let fallbackTriggered = false;
-            player.one('error', () => {
-                if (!fallbackTriggered) {
-                    fallbackTriggered = true;
-                    player.pause();
-                    window.location.href = url; // 失敗時のみ標準へ
-                }
-            });
-
-            player.play().then(() => {
-                playerWrapper.style.display = "block";
-            }).catch(err => {
-                // 自動再生ブロック以外（ソースが見つからない等）のエラー時は標準へ
-                if (player.error() && !fallbackTriggered) {
-                    fallbackTriggered = true;
-                    window.location.href = url;
-                }
-            });
-        }
-
-        function stopVideo() {
-            player.pause();
-            playerWrapper.style.display = "none";
-            mainUI.style.filter = "none";
-        }
-
         function closeDialog() {
             dialogEl.style.display = "none";
             mainUI.style.filter = "none";
-            // pendingUrl = ""; // 再生で使用するため、ここではリセットしない
+            pendingUrl = "";
             urlDisplay.innerText = "";
         }
 
@@ -245,7 +178,6 @@
         window.addEventListener('pageshow', (event) => {
             if (event.persisted) {
                 closeDialog();
-                stopVideo();
             }
         });
     </script>
