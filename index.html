@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tobasu - Link Receiver</title>
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23007AFF'%3E%3Cpath d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z'/%3E%3C/svg%3E">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { 
             --apple-blue: #007AFF; 
             --bg-gradient: radial-gradient(circle at 50% 50%, #1c1c1e 0%, #000000 100%); 
+            --plyr-color-main: var(--apple-blue); 
         }
         body { 
             margin: 0; padding: 0; height: 100vh; 
@@ -19,7 +21,6 @@
             overflow: hidden; 
         }
         
-        /* メインUI */
         .container { text-align: center; transition: all 0.5s ease; }
         .icon-circle { 
             width: 100px; height: 100px; background: var(--apple-blue); 
@@ -34,7 +35,34 @@
             100% { transform: scale(1); }
         }
 
-        /* ダイアログ（受信通知） */
+        #player-wrapper {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 100; align-items: center; justify-content: center;
+        }
+        #player-wrapper .plyr { width: 100%; height: 100%; }
+
+        /* iOS純正風 閉じるボタン */
+        .close-player {
+            position: absolute; 
+            top: env(safe-area-inset-top, 20px); 
+            right: 20px; 
+            z-index: 110;
+            background: rgba(45, 45, 45, 0.7); 
+            border: none; 
+            color: #ffffff;
+            width: 32px; height: 32px; 
+            border-radius: 50%; 
+            cursor: pointer;
+            font-size: 16px; 
+            font-weight: bold;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .close-player.visible { opacity: 1; visibility: visible; }
+
         #dialog {
             display: none;
             position: fixed;
@@ -101,84 +129,126 @@
     <div id="dialog">
         <h2 style="margin:0 0 5px; font-size: 1.4rem;">Tobasu Request</h2>
         <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem; margin-bottom: 15px;">Incoming link received:</p>
-        
         <div id="received-url" class="url-display"></div>
-        
         <div class="btn-group">
             <button id="ok-btn" class="btn btn-ok">Open</button>
             <button id="no-btn" class="btn btn-no">Ignore</button>
         </div>
     </div>
 
+    <div id="player-wrapper">
+        <video id="my-video" playsinline controls></video>
+        <button id="close-btn" class="close-player" onclick="stopVideo()">✕</button>
+    </div>
+
+    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
     <script>
         let pendingUrl = "";
+        let hlsInstance = null;
+        let controlTimer = null;
         const statusEl = document.getElementById('ip-status');
         const dialogEl = document.getElementById('dialog');
         const mainUI = document.getElementById('main-ui');
         const urlDisplay = document.getElementById('received-url');
+        const playerWrapper = document.getElementById('player-wrapper');
+        const videoElement = document.getElementById('my-video');
+        const closeBtn = document.getElementById('close-btn');
 
-        // IPアドレスを取得してPeerIDを作成
+        const player = new Plyr(videoElement, {
+            hideControls: true 
+        });
+
+        function showCloseButton() {
+            closeBtn.classList.add('visible');
+            clearTimeout(controlTimer);
+            controlTimer = setTimeout(() => {
+                if (!videoElement.paused) {
+                    closeBtn.classList.remove('visible');
+                }
+            }, 3000);
+        }
+
+        player.on('controlshidden', () => closeBtn.classList.remove('visible'));
+        player.on('controlsshown', () => showCloseButton());
+        playerWrapper.addEventListener('mousemove', showCloseButton);
+        playerWrapper.addEventListener('touchstart', showCloseButton);
+
         fetch('https://api.ipify.org?format=json')
             .then(res => res.json())
             .then(data => {
                 const networkID = "tobasu-" + data.ip.replace(/\./g, "-");
                 const peer = new Peer(networkID);
-                
-                peer.on('open', (id) => {
-                    statusEl.innerText = "● Ready on network: " + data.ip;
-                });
-
+                peer.on('open', (id) => { statusEl.innerText = "● Ready on network: " + data.ip; });
                 peer.on('connection', (conn) => {
                     conn.on('data', (url) => {
-                        if (url && (url.startsWith('http') || url.startsWith('https'))) {
+                        if (url && (url.startsWith('http'))) {
                             pendingUrl = url;
-                            urlDisplay.innerText = url; // ダイアログに表示
+                            urlDisplay.innerText = url; 
                             showDialog();
                         }
                     });
                 });
-
-                peer.on('error', (err) => {
-                    statusEl.innerText = "✕ Connection Error";
-                    console.error(err);
-                });
+                peer.on('error', (err) => { statusEl.innerText = "✕ Connection Error"; });
             })
-            .catch(err => {
-                statusEl.innerText = "✕ Offline or Blocked";
-            });
+            .catch(err => { statusEl.innerText = "✕ Offline or Blocked"; });
 
         function showDialog() {
             mainUI.style.filter = "blur(20px) scale(0.95)";
             dialogEl.style.display = "block";
+            document.getElementById('ok-btn').onclick = () => { closeDialog(); tryVideo(pendingUrl); };
+            document.getElementById('no-btn').onclick = () => { closeDialog(); };
+        }
+
+        function tryVideo(url) {
+            // 動画ファイルかどうかの判定を追加
+            const isVideo = url.match(/\.(mp4|m3u8|webm|ogv|mov|m4v|mpd|3gp|avi|mkv|ts)(\?.*)?$/i);
             
-            // アクセシビリティのためOpenボタンにフォーカス
-            document.getElementById('ok-btn').focus();
+            if (!isVideo) {
+                // 動画以外（一般サイト・YouTube等）は即座にリダイレクト
+                window.location.href = url;
+                return;
+            }
 
-            // Openクリック
-            document.getElementById('ok-btn').onclick = () => {
-                const targetUrl = pendingUrl; // URLを保持
-                closeDialog(); // 遷移前にダイアログを閉じる
-                window.location.href = targetUrl;
-            };
+            // 以下、動画ファイルの場合のみ実行
+            playerWrapper.style.display = "flex";
+            showCloseButton();
+            if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+            const fallback = () => { window.location.href = url; };
 
-            // Ignoreクリック
-            document.getElementById('no-btn').onclick = () => {
-                closeDialog();
-            };
+            if (url.includes('.m3u8')) {
+                if (Hls.isSupported()) {
+                    hlsInstance = new Hls();
+                    hlsInstance.loadSource(url);
+                    hlsInstance.attachMedia(videoElement);
+                    hlsInstance.on(Hls.Events.ERROR, (event, data) => { if (data.fatal) fallback(); });
+                } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+                    videoElement.src = url;
+                } else { fallback(); }
+            } else {
+                videoElement.src = url;
+            }
+            player.play().catch(err => { if (videoElement.error) fallback(); });
+        }
+
+        function stopVideo() {
+            player.pause();
+            if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+            videoElement.src = "";
+            videoElement.load();
+            playerWrapper.style.display = "none";
+            mainUI.style.filter = "none";
+            closeBtn.classList.remove('visible');
         }
 
         function closeDialog() {
             dialogEl.style.display = "none";
             mainUI.style.filter = "none";
-            pendingUrl = "";
-            urlDisplay.innerText = "";
         }
 
-        // 戻るボタンで戻ってきたときにダイアログを確実にリセットする
         window.addEventListener('pageshow', (event) => {
-            if (event.persisted) {
-                closeDialog();
-            }
+            if (event.persisted) { closeDialog(); stopVideo(); }
         });
     </script>
 </body>
