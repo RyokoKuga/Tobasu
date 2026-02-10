@@ -41,7 +41,6 @@
         }
         #player-wrapper .plyr { width: 100%; height: 100%; }
 
-        /* iOS純正風 閉じるボタン */
         .close-player {
             position: absolute; 
             top: env(safe-area-inset-top, 20px); 
@@ -142,38 +141,30 @@
     </div>
 
     <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
     <script>
-        let pendingUrl = "";
-        let hlsInstance = null;
         let controlTimer = null;
+        let player = null; 
+
         const statusEl = document.getElementById('ip-status');
         const dialogEl = document.getElementById('dialog');
         const mainUI = document.getElementById('main-ui');
         const urlDisplay = document.getElementById('received-url');
         const playerWrapper = document.getElementById('player-wrapper');
-        const videoElement = document.getElementById('my-video');
         const closeBtn = document.getElementById('close-btn');
-
-        const player = new Plyr(videoElement, {
-            hideControls: true 
-        });
+        const okBtn = document.getElementById('ok-btn');
+        const noBtn = document.getElementById('no-btn');
 
         function showCloseButton() {
             closeBtn.classList.add('visible');
             clearTimeout(controlTimer);
             controlTimer = setTimeout(() => {
-                if (!videoElement.paused) {
+                const video = document.getElementById('my-video');
+                if (player && video && !video.paused) {
                     closeBtn.classList.remove('visible');
                 }
             }, 3000);
         }
-
-        player.on('controlshidden', () => closeBtn.classList.remove('visible'));
-        player.on('controlsshown', () => showCloseButton());
-        playerWrapper.addEventListener('mousemove', showCloseButton);
-        playerWrapper.addEventListener('touchstart', showCloseButton);
 
         fetch('https://api.ipify.org?format=json')
             .then(res => res.json())
@@ -183,8 +174,9 @@
                 peer.on('open', (id) => { statusEl.innerText = "● Ready on network: " + data.ip; });
                 peer.on('connection', (conn) => {
                     conn.on('data', (url) => {
-                        if (url && (url.startsWith('http'))) {
-                            pendingUrl = url;
+                        if (url && url.startsWith('http')) {
+                            // 受信した瞬間にURLをDOM属性に記録（変数の汚染を防ぐ）
+                            okBtn.dataset.url = url; 
                             urlDisplay.innerText = url; 
                             showDialog();
                         }
@@ -197,49 +189,69 @@
         function showDialog() {
             mainUI.style.filter = "blur(20px) scale(0.95)";
             dialogEl.style.display = "block";
-            document.getElementById('ok-btn').onclick = () => { closeDialog(); tryVideo(pendingUrl); };
-            document.getElementById('no-btn').onclick = () => { closeDialog(); };
+            
+            // 重要：イベントを一度リセットしてから再登録
+            okBtn.onclick = null; 
+            okBtn.onclick = () => {
+                const targetUrl = okBtn.dataset.url; // その時のボタンに紐付いたURLを取得
+                closeDialog();
+                if (targetUrl) tryVideo(targetUrl);
+            };
+            
+            noBtn.onclick = () => { closeDialog(); };
         }
 
         function tryVideo(url) {
-            // 動画ファイルかどうかの判定を追加
-            const isVideo = url.match(/\.(mp4|m3u8|webm|ogv|mov|m4v|mpd|3gp|avi|mkv|ts)(\?.*)?$/i);
+            const isVideo = /\.(mp4|m4v|webm|ogv|mov|m3u8)$/i.test(url);
             
             if (!isVideo) {
-                // 動画以外（一般サイト・YouTube等）は即座にリダイレクト
                 window.location.href = url;
                 return;
             }
 
-            // 以下、動画ファイルの場合のみ実行
+            // 1. 既存プレイヤーとビデオ要素を物理的に作り直す（残像対策）
+            if (player) { player.destroy(); player = null; }
+            
+            let videoElement = document.getElementById('my-video');
+            const newVideo = videoElement.cloneNode(true); // 属性ごとコピー
+            videoElement.parentNode.replaceChild(newVideo, videoElement);
+            videoElement = newVideo;
+
+            // 2. 表示開始
             playerWrapper.style.display = "flex";
             showCloseButton();
-            if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-            const fallback = () => { window.location.href = url; };
+            
+            // 3. URL設定
+            videoElement.src = url;
 
-            if (url.includes('.m3u8')) {
-                if (Hls.isSupported()) {
-                    hlsInstance = new Hls();
-                    hlsInstance.loadSource(url);
-                    hlsInstance.attachMedia(videoElement);
-                    hlsInstance.on(Hls.Events.ERROR, (event, data) => { if (data.fatal) fallback(); });
-                } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
-                    videoElement.src = url;
-                } else { fallback(); }
-            } else {
-                videoElement.src = url;
-            }
-            player.play().catch(err => { if (videoElement.error) fallback(); });
+            // 4. 新規初期化
+            player = new Plyr(videoElement, { 
+                autoplay: true,
+                hideControls: true 
+            });
+
+            player.on('controlshidden', () => closeBtn.classList.remove('visible'));
+            player.on('controlsshown', () => showCloseButton());
+            
+            // 使用済みデータを消去
+            okBtn.dataset.url = "";
         }
 
         function stopVideo() {
-            player.pause();
-            if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-            videoElement.src = "";
-            videoElement.load();
+            if (player) {
+                player.pause();
+                player.destroy();
+                player = null;
+            }
+            const videoElement = document.getElementById('my-video');
+            if (videoElement) {
+                videoElement.removeAttribute('src');
+                videoElement.load();
+            }
             playerWrapper.style.display = "none";
             mainUI.style.filter = "none";
             closeBtn.classList.remove('visible');
+            okBtn.dataset.url = "";
         }
 
         function closeDialog() {
@@ -248,8 +260,11 @@
         }
 
         window.addEventListener('pageshow', (event) => {
-            if (event.persisted) { closeDialog(); stopVideo(); }
+            if (event.persisted) { stopVideo(); }
         });
+
+        playerWrapper.addEventListener('mousemove', showCloseButton);
+        playerWrapper.addEventListener('touchstart', showCloseButton);
     </script>
 </body>
 </html>
