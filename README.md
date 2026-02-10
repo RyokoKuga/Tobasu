@@ -3,9 +3,13 @@
 Tobasu is a minimal, elegant content-sharing tool. It allows you to **"throw" (jp: Tobasu)** URLs from one device to another instantly, as long as they are on the same Wi-Fi network.  
 
 - **Receiver**: [https://ryokokuga.github.io/Tobasu/](https://ryokokuga.github.io/Tobasu/)
-- **Sender**: [https://ryokokuga.github.io/Tobasu/send.html](https://ryokokuga.github.io/Tobasu/send.html) 
+- **Sender**: [https://ryokokuga.github.io/Tobasu/send.html](https://ryokokuga.github.io/Tobasu/send.html)
 
-
+> [!CAUTION]
+> **Demo Version Disclaimer**
+> The URLs provided at the top of this page are for **demo purposes** and utilize the **PeerJS free public server**. 
+> - **Stability**: Since this is a shared public resource, connection speeds may vary, and service may be unstable during peak traffic.
+> - **Privacy & Production Use**: For users who require higher security, privacy, or reliability for daily use, it is strongly recommended to **host your own PeerJS Server** rather than relying on the demo environment.
 
 ## ■ Features
 
@@ -58,7 +62,10 @@ javascript:(function(){
 ## ■ Tech Stack
 
 - **Frontend**: HTML5, CSS3 (Custom Variables, Flexbox, Keyframes)
-- **Networking**: [PeerJS](https://peerjs.com/)
+- **P2P Networking**: [PeerJS](https://peerjs.com/)
+- Signaling Server:
+  - Demo: PeerJS Public Cloud (0.peerjs.com)
+  - Production: Self-hosted instance recommended.
 - **Utility**: [ipify API](https://www.ipify.org/)
 
 ## ■ Usage Note
