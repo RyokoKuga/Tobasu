@@ -1,6 +1,6 @@
 # Tobasu <img src="https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.x/svgs/solid/paper-plane.svg" width="32" height="32" style="vertical-align: middle;">
 
-Tobasu is a minimal, elegant content-sharing tool. It allows you to **"throw" (jp: Tobasu)** URLs from one device to another instantly, as long as they are on the same Wi-Fi network.  
+**Tobasu** (**T**ransfer **O**ver **B**asic **A**nonymous **S**ync **U**tility) is a minimal, elegant content-sharing tool. It allows you to **"throw" (jp: Tobasu)** URLs from one device to another instantly, as long as they are on the same Wi-Fi network.  
 
 - **Receiver**: [https://ryokokuga.github.io/Tobasu/](https://ryokokuga.github.io/Tobasu/)
 - **Sender**: [https://ryokokuga.github.io/Tobasu/send.html](https://ryokokuga.github.io/Tobasu/send.html)
