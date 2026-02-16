@@ -1,6 +1,6 @@
 # Tobasu 
 
-**Tobasu** (**T**ransfer **O**ver **B**asic **A**nonymous **S**ync **U**tility) is a minimal, elegant content-sharing tool. It allows you to **"throw" (jp: Tobasu)** URLs from one device to another instantly, as long as they are on the same Wi-Fi network.  
+**Tobasu** (**T**ransmit **O**nly **B**y **A**nonymous **S**hared **U**rl) is a minimal, elegant content-sharing tool. It allows you to **"throw" (jp: Tobasu)** URLs from one device to another instantly, as long as they are on the same Wi-Fi network.  
 
 <img src="Image/Card.png" width="600px">  
 
